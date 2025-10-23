@@ -1,7 +1,7 @@
-Q 1-1: Using ENV hard-codes the secret into the image layer, making it visible to anyone with the image. The -e flag injects the secret only at runtime, keeping the image secure and reusable.
+Q 1-1: Using ENV saves the secret (like a password) directly into the image. Anyone who gets the image can see it. Using the -e flag only adds the secret when the container runs. This keeps the image secure.
 _____________________________________________________________________________________________________
 
-Q 1-2: Containers are ephemeral (temporary); their files are deleted when the container is removed. A volume stores the database data on the host machine, ensuring the data persists even if the container is destroyed.
+Q 1-2: Containers are temporary. When you delete a container, all its data is lost. A volume saves the data on the host computer, outside the container. This way, the data is safe even if the container is deleted.
 _____________________________________________________________________________________________________
 
 Q 1-3: Database container essentials
@@ -11,39 +11,39 @@ FROM postgres:17.2-alpine
 
 COPY ./init/ /docker-entrypoint-initdb.d/
 
-Commands All build and run commands are managed by the docker-compose.yml file (see Q 1-8).
+Commands All build and run commands are managed by the docker-compose.yml file.
 
 _____________________________________________________________________________________________________
 
-Q 1-4: we use multistage builds to keep the final image small and secure.
+Q 1-4: multistage builds make our final image small and secure.
 
-- 1 (build): Uses a heavy image (with JDK & Maven) to compile the .jar file.
+- Stage 1 (build): We use a big image (with JDK & Maven) to build the app.
 
-- 2 (run): Uses a lightweight image (with JRE only).
+- Stage 2 (run): We use a small image (with JRE only) to run the app.
 
-- 3 (copy) : We copy only the compiled .jar from 1 into 2, discarding all build tools.
-
-_____________________________________________________________________________________________________
-
-Q 1-5: it acts as a single, secure "front door" for our application. It hides the backend services from the user and can manage tasks like SSL termination, load balancing, and serving static files.
+- COPY: We copy only the final .jar file from Stage 1 into Stage 2 and throw away all the heavy build tools.
 
 _____________________________________________________________________________________________________
 
-Q 1-6: it defines and runs multi-container applications from a single YAML file. It manages the entire application lifecycle (start, stop), dependencies, and networking with one command.
+Q 1-5: a reverse proxy is the "front door" for our app. Users only connect to the proxy, which hides our backend services. This is more secure. It can also manage other tasks (like load balancing) from one single place.
+
+_____________________________________________________________________________________________________
+
+Q 1-6: it's important because it lets us define and run a full application (with many containers) from one single file. It manages starting, stopping, and connecting all the services with one command (docker compose up).
 
 ____________________________________________________________________________________________________
 
 Q 1-7: Docker-compose most important commands
 
-- docker compose up -d: Starts all services in the background.
+- docker compose up -d: starts all services in the background.
 
-- docker compose down: Stops and removes all services and networks.
+- docker compose down: stops and removes all services and networks.
 
-- docker compose logs -f: Tails (follows) the logs of all services.
+- docker compose logs -f: shows the logs from all services (and "follows" new logs).
 
-- docker compose ps: Lists the running services.
+- docker compose ps: lists the running services.
 
-- docker compose build: Forces a rebuild of the images.
+- docker compose build: forces Docker to rebuild the images.
 
 _____________________________________________________________________________________________________
 
@@ -120,4 +120,4 @@ docker push ccao94/tp1-backend:1.0
 docker push ccao94/tp1-httpd:1.0
 _____________________________________________________________________________________________________
 
-Q 1-10: we use a remote repository (like Docker Hub) to share images with a team, version our builds, and deploy them consistently across different environments (e.g., development, testing, production).
+Q 1-10: we put images in an online repo (like Docker Hub) to share them with teammates. It also lets us save different versions (like 1.0, 1.1) and use the exact same image for development, testing, and production.
