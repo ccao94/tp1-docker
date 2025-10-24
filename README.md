@@ -1,3 +1,5 @@
+# TP 1
+
 Q 1-1: Using ENV saves the secret (like a password) directly into the image. Anyone who gets the image can see it. Using the -e flag only adds the secret when the container runs. This keeps the image secure.
 _____________________________________________________________________________________________________
 
@@ -121,3 +123,14 @@ docker push ccao94/tp1-httpd:1.0
 _____________________________________________________________________________________________________
 
 Q 1-10: we put images in an online repo (like Docker Hub) to share them with teammates. It also lets us save different versions (like 1.0, 1.1) and use the exact same image for development, testing, and production.
+
+
+
+# TP 2
+
+Q 2-1: Testcontainers is a Java library that lets you run Docker containers during your tests.
+
+when we run mvn clean verify, Testcontainers automatically starts a real PostgreSQL container. Our integration tests then connect to this temporary database. This is very useful because it checks if our code works with a real database, not just a "mock" or fake one.
+
+
+
