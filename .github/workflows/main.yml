@@ -28,13 +28,7 @@ jobs:
      #run SonarCloud analysis
       - name: SonarCloud Scan
         # This command runs after the tests and sends the report to SonarCloud, we use secrets for the token and provide the project keys
-        run: >-
-          mvn -B verify sonar:sonar
-          -Dsonar.projectKey=d6b9f7f6e4f6e9f9d102461839e766ded82623fb
-          -Dsonar.organization=0f7c54f37ce0a41a1fdcb951aec1b84503d6f283
-          -Dsonar.host.url=https://sonarcloud.io0f7c54f37ce0a41a1fdcb951aec1b84503d6f283
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          --file backend/pom.xml
+        run: mvn -B verify sonar:sonar -Dsonar.projectKey= d6b9f7f6e4f6e9f9d102461839e766ded82623fb -Dsonar.organization= 0f7c54f37ce0a41a1fdcb951aec1b84503d6f283 -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${{ secrets.SONAR_TOKEN }} --file backend/pom.xml
 
   # Build and Push Docker images
   build-and-push-images:
