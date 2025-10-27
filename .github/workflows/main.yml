@@ -54,16 +54,19 @@ steps:
           context: ./backend # Path to the Dockerfile
            # Note: tags has to be all lower-case
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-backend:latest
+          push: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Build image and push database
         uses: docker/build-push-action@v6
         with:
           context: ./database
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-database:latest
+          push: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Build image and push httpd
         uses: docker/build-push-action@v6
         with:
           context: ./httpd
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-httpd:latest
+          push: ${{ github.ref == 'refs/heads/master' }}
         
