@@ -6,11 +6,8 @@ on:
       - master
       - develop
   pull_request:
-    branches:
-      - master
-      - develop
 
-# Defines all the jobs that will run
+ #defines all the jobs that will run
 jobs:
   test-backend:
     runs-on: ubuntu-24.04
