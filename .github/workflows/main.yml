@@ -1,5 +1,4 @@
 name: CI/CD devops 2025
-
 on:
   #to begin you want to launch this job in main and develop
   push:
