@@ -1,119 +1,15 @@
-name: CI/CD devops 2025
-
-# Triggers for the workflow
-on:
-  push:
-    branches:
-      - master
-      - develop
-  pull_request:
-    # No branches here: run tests on ALL pull requests
-    # branches:
-    #   - master
-    #   - develop
-
-jobs:
-  # Build, Test, and Analyze code
-  test-backend:
-    runs-on: ubuntu-latest # Use latest stable Ubuntu runner
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Build, test with Maven
-        run: mvn clean verify --file backend/pom.xml
-
-      - name: SonarCloud Scan
-        # Run Sonar analysis after tests pass
-        run: >-
-          mvn -B verify sonar:sonar
-          -Dsonar.projectKey=ccao94_tp1-docker # Your project key
-          -Dsonar.organization=ccao94         # Your organization key
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          --file backend/pom.xml
-
-  # Build and Push Docker images (only for master branch)
-  build-and-push-images:
-    needs: test-backend # Run only if tests and Sonar pass
-    runs-on: ubuntu-latest
-    # Condition: Only run this job on pushes to the master branch
-    if: github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-backend:latest
-          push: true # Push is always true when this job runs (due to 'if' above)
-
-      - name: Build and push database image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./database
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-database:latest
-          push: true
-
-      - name: Build and push httpd image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./httpd
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-httpd:latest
-          push: true
-
-  # Deploy using Ansible (only for master branch)
-  deploy-with-ansible:
-    needs: build-and-push-images # Run only after images are pushed
-    runs-on: ubuntu-latest
-    # Condition: Only run this job on pushes to the master branch
-    if: github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout code
-        # Get the repository code, including Ansible files
-        uses: actions/checkout@v4
-
-      - name: Install Ansible
-        # Install Ansible on the runner machine
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible sshpass
-
-      - name: Prepare SSH Key
-        # Write the SSH private key from GitHub Secrets to a file and set correct permissions
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_ansible
-          chmod 600 ~/.ssh/id_rsa_ansible
-
-      - name: Prepare Vault Password File
-        # Write the Vault password from GitHub Secrets to a temporary file
-        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > vault_pass.txt
-
-      - name: Run Ansible Playbook
-        # Execute the playbook using the Vault password file
-        # Override the inventory's key file path to use the one from secrets
-        run: >-
-          ansible-playbook
-          -i ansible/inventories/setup.yml
-          ansible/playbook.yml
-          --vault-password-file vault_pass.txt
-          --extra-vars "ansible_ssh_private_key_file=~/.ssh/id_rsa_ansible"
-
-      - name: Clean up temporary files
-        # Remove sensitive files after use for security
-        if: always() # Always run cleanup, even if previous steps failed
-        run: |
-          rm -f vault_pass.txt
-          rm -f ~/.ssh/id_rsa_ansible
+---
+- name: Launch backend container
+  docker_container:
+    name: backend
+    image: ccao94/tp1-backend:latest
+    restart_policy: on-failure # Retry if the container crashe
+    networks:
+      - name: app-network
+      - name: proxy-network # Added so Apache can reach backend directly
+    env:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/{{ postgres_db }}"
+      SPRING_DATASOURCE_USERNAME: "{{ postgres_user }}"
+      SPRING_DATASOURCE_PASSWORD: "{{ postgres_password }}"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
