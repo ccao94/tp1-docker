@@ -1,8 +1,11 @@
+---
 - hosts: all
-  become: true
   gather_facts: true
+  become: true
+
   vars_files:
-    - ansible/vault.yml  
+    - ./ansible/vault.yml  
+
   roles:
     - docker
     - network

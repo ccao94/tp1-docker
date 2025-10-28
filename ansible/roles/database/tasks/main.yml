@@ -11,5 +11,5 @@
       POSTGRES_USER: "{{ postgres_user }}"
       POSTGRES_PASSWORD: "{{ postgres_password }}"
       POSTGRES_DB: "{{ postgres_db }}"
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
+    state: started
+    restart_policy: always
