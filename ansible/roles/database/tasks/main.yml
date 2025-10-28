@@ -3,13 +3,12 @@
   docker_container:
     name: db
     image: ccao94/tp1-database:latest
-    networks:
-      - name: app-network
-    volumes:
-      - "db-data:/var/lib/postgresql/data"
     env:
       POSTGRES_USER: "{{ postgres_user }}"
       POSTGRES_PASSWORD: "{{ postgres_password }}"
       POSTGRES_DB: "{{ postgres_db }}"
+    networks:
+      - name: app-network
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
     state: started
-    restart_policy: always

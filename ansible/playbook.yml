@@ -4,8 +4,7 @@
   become: true
 
   vars_files:
-    - ./ansible/vault.yml  
-
+    - vault.yml   
   roles:
     - docker
     - network
