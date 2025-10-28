@@ -24,3 +24,8 @@ ansible/keys/
 
 # Environment files (sensitive)
 ansible/roles/database/files/db.env
+
+ansible/.vault_pass.txt
+*.pyc
+__pycache__/
+*.log
