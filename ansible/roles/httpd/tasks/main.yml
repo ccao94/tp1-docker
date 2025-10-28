@@ -1,33 +1,8 @@
-- name: Gather service facts
-  service_facts:  # Check if any local web services are running
-          
-- name: Stop known conflicting web services (if running)
-  systemd:
-    name: "{{ item }}"
-    state: stopped
-    enabled: no
-  loop:
-    - apache2
-    - httpd
-    - nginx
-  when: "ansible_facts.services[item + '.service'] is defined and ansible_facts.services[item + '.service'].state == 'running'"
-  ignore_errors: yes
-
-- name: Remove old web containers
-  docker_container:
-    name: "{{ item }}"
-    state: absent
-  loop:
-    - web
-    - proxy
-
 - name: Launch Apache reverse proxy
   docker_container:
     name: web # Container name exposed on host port 80
     image: ccao94/tp1-httpd:latest # Corrected image name
     networks:
-      - name: app-network
+      - name: proxy-network # Connect Apache only to proxy network
     published_ports:
       - "80:80" # Expose Apache to host
-    state: started
-    restart_policy: always

@@ -1,14 +1,15 @@
+---
 - name: Launch backend container
   docker_container:
     name: backend
     image: ccao94/tp1-backend:latest
-    env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/db # Connect to PostgreSQL
-      SPRING_DATASOURCE_USERNAME: usr
-      SPRING_DATASOURCE_PASSWORD: pwd
+    restart_policy: on-failure # Retry if the container crashe
     networks:
       - name: app-network
-    published_ports:
-      - "8080:8080" # Expose backend port internally (optional)
-    state: started
-    restart_policy: always
+      - name: proxy-network # Added so Apache can reach backend directly
+    env:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/{{ postgres_db }}"
+      SPRING_DATASOURCE_USERNAME: "{{ postgres_user }}"
+      SPRING_DATASOURCE_PASSWORD: "{{ postgres_password }}"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

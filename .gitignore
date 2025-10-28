@@ -1,0 +1,26 @@
+# IDE configuration files
+.idea/
+.vscode/
+*.iml
+
+# Java build files (Maven / Gradle)
+target/
+*.jar
+*.war
+
+# Logs
+*.log
+*.log.*
+
+# System files (macOS, Windows)
+.DS_Store
+Thumbs.db
+
+# Ansible-related files
+# Ignore private SSH keys
+ansible/keys/
+# Ignore Ansible retry files
+*.retry
+
+# Environment files (sensitive)
+ansible/roles/database/files/db.env

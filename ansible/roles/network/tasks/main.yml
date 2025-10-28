@@ -2,3 +2,7 @@
   docker_network:
     name: app-network # Unified network name for all containers
     state: present
+- name: Create Docker network
+  docker_network:
+    name: proxy-network # Unified network name for all containers
+    state: present
