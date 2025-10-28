@@ -9,7 +9,7 @@ on:
 jobs:
   # Build, Test, and Analyze code
   test-backend:
-    runs-on: ubuntu-latest # Use latest stable Ubuntu runner
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,9 +30,8 @@ jobs:
 
   # Build and Push Docker images (only for master branch)
   build-and-push-images:
-    needs: test-backend # Run only if tests and Sonar pass
+    needs: test-backend
     runs-on: ubuntu-latest
-    # Condition: Only run this job on pushes to the master branch
     if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
@@ -46,7 +45,7 @@ jobs:
         with:
           context: ./backend
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp1-backend:latest
-          push: true # Push is always true when this job runs (due to 'if' above)
+          push: true
 
       - name: Build and push database image
         uses: docker/build-push-action@v6
@@ -64,9 +63,8 @@ jobs:
 
   # Deploy using Ansible (only for master branch)
   deploy-with-ansible:
-    needs: build-and-push-images # Run only after images are pushed
+    needs: build-and-push-images
     runs-on: ubuntu-latest
-    # Condition: Only run this job on pushes to the master branch
     if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
@@ -83,22 +81,19 @@ jobs:
           echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_ansible
           chmod 600 ~/.ssh/id_rsa_ansible
 
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H cao.cao.takima.cloud >> ~/.ssh/known_hosts
+
       - name: Prepare Vault Password File
         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > vault_pass.txt
 
       - name: Run Ansible Playbook
-        # Execute the playbook using the Vault password file
-        # Override the inventory's key file path to use the one from secrets
-        run: >-
-          ansible-playbook
-          -i ansible/inventories/setup.yml
-          ansible/playbook.yml
-          --vault-password-file ./vault_pass.txt
-          --extra-vars "ansible_ssh_private_key_file=~/.ssh/id_rsa_ansible"
+        run: ansible-playbook -i ansible/inventories/setup.yml ansible/playbook.yml --vault-password-file ./vault_pass.txt --extra-vars "ansible_ssh_private_key_file=~/.ssh/id_rsa_ansible"
 
       - name: Clean up temporary files
-        # Remove sensitive files after use for security
-        if: always() # Always run cleanup, even if previous steps failed
+        if: always()
         run: |
           rm -f vault_pass.txt
           rm -f ~/.ssh/id_rsa_ansible
