@@ -1,0 +1,10 @@
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/SimpleApiApplication.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/controller/DepartmentController.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/controller/GreetingController.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/controller/StudentController.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/dao/DepartmentDAO.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/dao/StudentDAO.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/entity/Department.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/entity/Student.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/service/DepartmentService.java
+/root/tp-devops/tp1-docker/backend/src/main/java/fr/takima/training/simpleapi/service/StudentService.java

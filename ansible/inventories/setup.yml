@@ -1,0 +1,8 @@
+all:
+  vars:
+    ansible_user: admin # SSH user to connect to the server
+    ansible_ssh_private_key_file: ansible/keys/id_rsa
+  children:
+    prod:
+      hosts:
+        cao.cao.takima.cloud: # Target host
