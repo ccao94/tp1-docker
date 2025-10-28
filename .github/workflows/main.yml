@@ -5,10 +5,6 @@ on:
       - master
       - develop
   pull_request:
-    # No branches here: run tests on ALL pull requests
-    # branches:
-    #   - master
-    #   - develop
 
 jobs:
   # Build, Test, and Analyze code
