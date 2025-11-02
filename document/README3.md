@@ -7,15 +7,15 @@ This file defines the remote servers (hosts) we want to manage.
 
 all:
   vars:
-    # The user we connect with
+    # the user we connect with
     ansible_user: admin
-    # The path to our private key (relative to this file)
-    ansible_ssh_private_key_file: ../keys/id_rsa 
+    # the path to our private key
+    ansible_ssh_private_key_file: ansible/keys/id_rsa 
   children:
-    # We create a 'prod' group
+    # we create a 'prod' group
     prod:
       hosts:
-        # Our server's domain
+        # our server's domain
         cao.cao.takima.cloud:
 
 The ansible/keys/ directory is added to .gitignore to keep the private key secure.
@@ -24,71 +24,107 @@ ________________________________________________________________________________
 
 Q 3-2: Playbook and Roles Documentation
 
-to keep the project organized, the Docker installation logic was moved into an Ansible Role.
+to keep the project organized, logic is split into Roles. The main playbook (playbook.yml) just calls these roles in the correct order.
 
-Role: ansible/roles/docker/
-A role named docker was created using ansible-galaxy init. Its only job is to install and start Docker. The installation tasks were moved from the main playbook into ansible/roles/docker/tasks/main.yml.
+- name: Install Docker SDK for Python (Globally and break protection)
+  command: pip3 install docker requests docker-compose --break-system-packages
 
-Main Playbook (ansible/playbook.yml)
-The main playbook is now much simpler. It just defines the target hosts (all) and calls the roles it needs to run.
+Main Playbook (ansible/playbook.yml) : this file loads our encrypted vault.yml file (which holds all passwords) and then runs the 5 roles in sequence.
 
 - hosts: all
-  gather_facts: true # The Docker role needs facts (e.g., OS release)
-  become: true       # The Docker role needs sudo
-roles: - docker
+  gather_facts: true
+  become: true
+
+  vars_files:
+    - vault.yml # load our encrypted passwords
+
+  roles:
+    - docker # install Docker & Python libs
+    - network # create Docker networks
+    - database # launch PostgreSQL container
+    - backend # launch backend container
+    - httpd # launch Apache reverse proxy
 
 ___________________________________________________________________________________________________
 
 Q 3-3: docker_container Tasks Documentation
 
-we use the docker_container module in separate roles to launch each service. The ansible_python_interpreter is set to /opt/docker_venv/bin/python because this module requires the Python docker SDK, which we installed in that virtual environment.
+we use the docker_container module to launch our 3 services. All secrets (passwords, db names) are loaded securely from vault.yml using variables like {{ postgres_password }}.
+we use 2 separate Docker networks for security:
 
-Role: database/tasks/main.yml
+- app-network: for internal communication between the backend and database.
 
-- name: Run database container
+- proxy-network: for communication between the httpd proxy and the backend.
+
+
+Role: database/tasks/main.yml (this container only connects to the internal app-network)
+
+- name: Launch database container
   docker_container:
     name: db
-    image: ccao94/tp1-database:latest # Image from Docker Hub
-    restart_policy: always
+    image: ccao94/tp1-database:latest
     networks:
       - name: app-network
     volumes:
-      - "db-data:/var/lib/postgresql/data" # Use a persistent named volume
+      - "db-data:/var/lib/postgresql/data"
     env:
-      # Inject environment variables for Postgres
-      POSTGRES_DB: db
-      POSTGRES_USER: usr
-      POSTGRES_PASSWORD: pwd
+      # Use variables from Ansible Vault
+      POSTGRES_USER: "{{ postgres_user }}"
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+      POSTGRES_DB: "{{ postgres_db }}"
     state: started
-Role: backend/tasks/main.yml
+    restart_policy: on-failure
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
 
-- name: Run backend container
+
+Role: backend/tasks/main.yml (this container connects to both networks : app-network to talk to the DB, and proxy-network to be reached by the proxy)
+
+- name: Launch backend container
   docker_container:
-    name: api
+    name: backend #named 'backend' to match httpd.conf
     image: ccao94/tp1-backend:latest
-    restart_policy: always
+    restart_policy: on-failure
     networks:
       - name: app-network
+      - name: proxy-network 
     env:
-      # Inject environment variables for Spring Boot
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/db
-      SPRING_DATASOURCE_USERNAME: usr
-      SPRING_DATASOURCE_PASSWORD: pwd
-    state: started
-This role runs after the database role, ensuring the db hostname exists.
+      # Use variables from Ansible Vault
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/{{ postgres_db }}"
+      SPRING_DATASOURCE_USERNAME: "{{ postgres_user }}"
+      SPRING_DATASOURCE_PASSWORD: "{{ postgres_password }}"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
 
-Role: httpd/tasks/main.yml
 
-- name: Run httpd proxy container
+Role: httpd/tasks/main.yml (This role includes cleanup tasks and only connects to the proxy-network)
+
+- name: Force stop and remove ANY old web containers
+  docker_container:
+    name: "{{ item }}"
+    state: absent
+  loop: [ 'web', 'proxy' ]
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: Launch Apache reverse proxy
   docker_container:
     name: web
     image: ccao94/tp1-httpd:latest
-    restart_policy: always
     networks:
-      - name: app-network
+      - name: proxy-network
     ports:
-      - "80:80" # The only port exposed to the host
+      - "80:80" # the only port exposed to the internet
     state: started
+    restart_policy: on-failure
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
 
 ___________________________________________________________________________________________________
 
+
+Q " Is it really safe to deploy automatically every new image on the hub ? explain. What can I do to make it more secure?"
+
+no, it's not safe. Automated tests can miss critical bugs and break production.
+
+To make it safer, stop using :latest and deploy specific versions (like 1.1.0). Always deploy to a "staging" server for manual checks first, then add a manual approval step in github actions before the final production run.
